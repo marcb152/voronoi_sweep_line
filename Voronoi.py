@@ -7,6 +7,7 @@ from Structures.CircleEvent import CircleEvent
 from Structures.Arc import Arc
 from Structures.Edge import Edge
 
+
 class Voronoi:
     def __init__(self, entry: list[Vertex]):
         self.tree = BSTNode(None)
@@ -15,20 +16,24 @@ class Voronoi:
         while not self.queue.is_empty():
             p = self.queue.pop_max()
             if type(p) == PointEvent:
-                self._handle_point_event(p.vertex)
+                self._handle_point_event(p)
             elif type(p) == CircleEvent:
-                self._handle_circle_event(p.alpha)
+                self._handle_circle_event(p)
         # TODO: Manage all the unbounded arcs in 'tree'
         # |-> Calculate the intersection between them and the bounding box
 
-    def _handle_point_event(self, p: Vertex):
+    def _handle_point_event(self, pt_event: PointEvent):
+        p = pt_event.vertex
         # We retrieve alpha, the arc above p
         alpha = self.tree.search_arc_above_vert(p)
         # We remove any circle event related to alpha
         # since it became obsolete after this point event
-        if alpha.circle_event:
-            self.queue.remove(alpha.circle_event)
-            del alpha.circle_event
+        if alpha.circle_events and len(alpha.circle_events) > 0:
+            for c_event in alpha.circle_events:
+                self.queue.remove(c_event)
+                # Helping the Garbage Collector
+                del c_event
+            alpha.circle_events = None
         # Let q be the vertex linked to alpha
         q = alpha.vertex
         # We split alpha into alpha0 and alpha2
@@ -49,11 +54,18 @@ class Voronoi:
             /       \
         q-alpha0    q-alpha2
         """
+        # Removing alpha from the tree
         parent_node_alpha = self.tree.find(alpha).root_node
         self.tree.find_and_remove(alpha)
-        alpha0 = Arc(q)
+        # Defining new arcs
+        alpha0 = Arc(q, left_arc=alpha.left_arc)
         alpha1 = Arc(p)
-        alpha2 = Arc(q)
+        alpha2 = Arc(q, right_arc=alpha.right_arc)
+        alpha0.right_arc = alpha1
+        alpha1.left_arc = alpha0
+        alpha1.right_arc = alpha2
+        alpha2.left_arc = alpha1
+        # Defining new tree nodes
         p_alpha1_node = BSTNode(alpha1, parent_node_alpha)
         q_alpha0_node = BSTNode(alpha0, p_alpha1_node)
         q_alpha2_node = BSTNode(alpha2, p_alpha1_node)
@@ -65,9 +77,54 @@ class Voronoi:
         vert1 = Arc.calculate_intersection(alpha1, alpha2)
         self.voronoi_graph.add_edge(Edge(vert0, vert1))
         # Check for circle events on the left and on the right
-        #TODO
-        pass
+        if alpha0.left_arc:
+            center = Vertex.calculate_circumcenter(
+                alpha0.left_arc.vertex,
+                q,
+                p)
+            # Alpha0 is the arc that will disappear with this event
+            circle_event = CircleEvent(alpha0, center)
+            alpha0.circle_events.append(circle_event)
+            alpha1.circle_events.append(circle_event)
+            alpha0.left_arc.circle_events.append(circle_event)
+            self.queue.insert(circle_event)
+        if alpha2.right_arc:
+            center = Vertex.calculate_circumcenter(
+                alpha2.right_arc.vertex,
+                q,
+                p)
+            # Alpha2 is the arc that will disappear with this event
+            circle_event = CircleEvent(alpha2, center)
+            alpha2.circle_events.append(circle_event)
+            alpha1.circle_events.append(circle_event)
+            alpha2.right_arc.circle_events.append(circle_event)
+            self.queue.insert(circle_event)
 
-    def _handle_circle_event(self, alpha: Arc):
-        #TODO
+    def _handle_circle_event(self, circle_event: CircleEvent):
+        alpha = circle_event.alpha
+        """
+        What we have before:
+                 p-alpha
+                /       \
+        q-alpha_left    r-alpha_right
+        
+        What we will obtain??
+        """
+        self.tree.find_and_remove(alpha)
+        # TODO: delete alpha and handle breakpoints
+        # We remove any circle event related to alpha
+        # since it became obsolete after this point event
+        if alpha.circle_events and len(alpha.circle_events) > 0:
+            for c_event in alpha.circle_events:
+                self.queue.remove(c_event)
+                # Helping the Garbage Collector
+                del c_event
+            alpha.circle_events = None
+        # We add the edges and vertices to the DCEL
+        vertex = Arc.calculate_intersection(alpha.left_arc, alpha.right_arc)
+        self.voronoi_graph.add_vertex(vertex)
+        self.voronoi_graph.add_edge(Edge(vertex))
+        # TODO
+
+    def check_for_circle_events(self):
         pass

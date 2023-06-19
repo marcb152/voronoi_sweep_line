@@ -1,9 +1,12 @@
 from Vertex import Vertex
 from PointEvent import PointEvent
 from Event import Event
+from Arc import Arc
+
 
 class PriorityQueue:
-    #TODO: Rework for a faster implementation (Heap)
+    # TODO: Rework for a faster implementation (Heap / BST)
+    # This priority queue is y-sorted (axis of progression of the sweep-line
     def __init__(self, entry: list[Vertex], sorting_func):
         self._value = [PointEvent(x) for x in entry].sort(key=sorting_func)
         self.sorting_func = sorting_func
@@ -26,3 +29,12 @@ class PriorityQueue:
         :return:
         """
         self._value.remove(event)
+
+    def insert(self, event: Event):
+        """
+        DOES NOT WORK -> KNOWN
+        :param event:
+        :return:
+        """
+        # TODO
+        self._value.append(event)
