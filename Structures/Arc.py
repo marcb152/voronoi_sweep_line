@@ -27,8 +27,11 @@ class Arc:
         :return: The lower intersection with the left arc, if any.
         Defaults to -10 000 if none is found.
         """
-        # TODO
-        pass
+        intersect = Arc.calculate_intersection(self.left_arc, self)
+        if intersect:
+            return intersect.x
+        else:
+            return -10000.0
 
     def upper_bound(self) -> float:
         """
@@ -36,14 +39,11 @@ class Arc:
         :return: The upper intersection with the right arc, if any.
         Defaults to +10 000 if none is found.
         """
-        # TODO
-        pass
-
-    def is_within_bounds(self, x: float):
-        if self.lower_bound() <= x <= self.upper_bound():
-            return True
+        intersect = Arc.calculate_intersection(self, self.right_arc)
+        if intersect:
+            return intersect.x
         else:
-            return False
+            return 10000.0
 
     # __init__ as defined
     @staticmethod

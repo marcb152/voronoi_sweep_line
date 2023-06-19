@@ -81,7 +81,7 @@ class BSTNode:
         :param value: The searching item
         :return: The found BSTNode object
         """
-        # TODO: Implement proper exception handling
+        # TODO (negligible): Implement proper exception handling
         if type(value) == Vertex:
             if value == self.arc.focus:
                 return self
@@ -116,7 +116,7 @@ class BSTNode:
             raise "UnsupportedTypeException"
 
     def search_arc_above_vert(self, vert: Vertex) -> Arc:
-        # TODO: check the pertinence of inequalities (>= <=)
+        # TODO (negligible): check the pertinence of inequalities (>= <=)
         # This node is above the asked point/focus
         if self.arc.lower_bound() <= vert.x <= self.arc.upper_bound():
             return self.arc

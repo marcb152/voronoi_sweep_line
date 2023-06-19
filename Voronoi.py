@@ -23,7 +23,7 @@ class Voronoi:
                 self._handle_point_event(p)
             elif type(p) == CircleEvent:
                 self._handle_circle_event(p)
-        # TODO: Manage all the unbounded arcs in 'tree'
+        # TODO: Manage all the unbounded arcs in 'tree' -> EASY
         # |-> Calculate the intersection between them and the bounding box
 
     def _handle_point_event(self, pt_event: PointEvent):
