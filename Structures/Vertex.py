@@ -10,10 +10,10 @@ class Vertex:
         """
         Formula based on wikipedia
         Source: https://en.wikipedia.org/wiki/Circumscribed_circle
-        :param a: The first vertex
-        :param b: The second vertex
-        :param c: The third vertex
-        :return: The vertex of the circumcenter
+        :param a: The first focus
+        :param b: The second focus
+        :param c: The third focus
+        :return: The focus of the circumcenter
         """
         d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y))
         u_x = ((a.x ** 2 + a.y ** 2) * (b.y - c.y)

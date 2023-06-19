@@ -1,5 +1,7 @@
 from Edge import Edge
 from Vertex import Vertex
+
+
 class DCEL:
     def __init__(self):
         self.value = []

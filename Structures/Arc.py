@@ -3,18 +3,20 @@ from Vertex import Vertex
 
 
 class Arc:
-    def __init__(self, vert: Vertex = None,
+    def __init__(self, focus: Vertex = None,
+                 directrix: float = 0,
                  circle_event: CircleEvent = None,
                  right_arc: 'Arc' = None,
                  left_arc: 'Arc' = None):
         """
         This type defines a parabola
-        :param vert: The vertex linked to this parabola
+        :param focus: The focus linked to this parabola
         :param circle_event: One circle event to link to
         :param right_arc: The arc on the right of it, if any
         :param left_arc: The arc on the left of it, if any
         """
-        self.vertex = vert
+        self.focus = focus
+        self.directrix = directrix
         self.circle_events = [circle_event]
         self.right_arc = right_arc
         self.left_arc = left_arc

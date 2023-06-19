@@ -25,12 +25,12 @@ class BSTNode:
 
         if arc == self.arc:
             raise "NotImplementedException"
-        elif arc.vertex.x < self.arc.vertex.x:
+        elif arc.focus.x < self.arc.focus.x:
             if not self.left_node:
                 self.left_node = BSTNode(arc, self)
             else:
                 self.left_node.insert(arc)
-        elif arc.vertex.x > self.arc.vertex.x:
+        elif arc.focus.x > self.arc.focus.x:
             if not self.right_node:
                 self.right_node = BSTNode(arc, self)
             else:
@@ -38,7 +38,7 @@ class BSTNode:
         else:
             raise "NotImplementedException"
 
-    def find_and_remove(self, arc: Arc, search_func = None):
+    def find_and_remove(self, arc: Arc):
         if arc == self.arc:
             self._delete_node(self)
         elif arc < self.arc:
@@ -57,8 +57,8 @@ class BSTNode:
     # __init__ as defined
     def _delete_node(self, node: 'BSTNode'):
         """
-        This utility function deletes a BSTNode from the BST.
-        :param node: Must be of type BSTNode.
+        This utility function deletes a BSTNode from the BST
+        :param node: Must be of type BSTNode
         :return:
         """
         # We delete its children first
@@ -75,23 +75,22 @@ class BSTNode:
         # Finally we delete it
         del node
 
-    def find(self, value: Vertex | Arc, search_func = None) -> 'BSTNode':
+    def find(self, value: Vertex | Arc) -> 'BSTNode':
         """
-        Finds a BSTNode based on a vert or an arc.
-        :param value: The searching item.
-        :param search_func: Not implemented yet
-        :return: The found BSTNode object.
+        Finds a BSTNode based on a vert or an arc
+        :param value: The searching item
+        :return: The found BSTNode object
         """
         # TODO: Implement proper exception handling
         if type(value) == Vertex:
-            if value == self.arc.vertex:
+            if value == self.arc.focus:
                 return self
-            elif value < self.arc.vertex:
+            elif value < self.arc.focus:
                 if self.left_node:
                     return self.left_node.find(value)
                 else:
                     raise "ValueNotFoundException"
-            elif value > self.arc.vertex:
+            elif value > self.arc.focus:
                 if self.right_node:
                     return self.right_node.find(value)
                 else:
@@ -118,7 +117,7 @@ class BSTNode:
 
     def search_arc_above_vert(self, vert: Vertex) -> Arc:
         # TODO: check the pertinence of inequalities (>= <=)
-        # This node is above the asked point/vertex
+        # This node is above the asked point/focus
         if self.arc.lower_bound() <= vert.x <= self.arc.upper_bound():
             return self.arc
         # This node is on the right of the asked point

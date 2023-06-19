@@ -1,20 +1,24 @@
 from Structures.Vertex import Vertex
-from Structures.PriorityQueue import PriorityQueue
 from Structures.DCEL import DCEL
 from Structures.BSTNode import BSTNode
 from Structures.PointEvent import PointEvent
 from Structures.CircleEvent import CircleEvent
 from Structures.Arc import Arc
 from Structures.Edge import Edge
+from Structures.PriorityQueue import PriorityQueue, Node
 
 
 class Voronoi:
     def __init__(self, entry: list[Vertex]):
         self.tree = BSTNode(None)
         self.voronoi_graph = DCEL()
-        self.queue = PriorityQueue(entry, max)
-        while not self.queue.is_empty():
-            p = self.queue.pop_max()
+        # Converting points to list of PointEvents
+        points = [PointEvent(vert) for vert in entry]
+        values = [Node(priority=pt_event.value, label=pt_event)
+                  for pt_event in points]
+        self.queue = PriorityQueue(values)
+        while self.queue.size > 0:
+            (value, p) = self.queue.min()
             if type(p) == PointEvent:
                 self._handle_point_event(p)
             elif type(p) == CircleEvent:
@@ -30,12 +34,12 @@ class Voronoi:
         # since it became obsolete after this point event
         if alpha.circle_events and len(alpha.circle_events) > 0:
             for c_event in alpha.circle_events:
-                self.queue.remove(c_event)
+                self.queue.delete(c_event)
                 # Helping the Garbage Collector
                 del c_event
             alpha.circle_events = None
-        # Let q be the vertex linked to alpha
-        q = alpha.vertex
+        # Let q be the focus linked to alpha
+        q = alpha.focus
         # We split alpha into alpha0 and alpha2
         # We create alpha1, the arc related to p
         """
@@ -49,7 +53,7 @@ class Voronoi:
                             /               \
                         p-alpha1        q-alpha2
         
-        What we will obtain:
+        What we will obtain because I'm lazy:
             p-alpha1
             /       \
         q-alpha0    q-alpha2
@@ -77,31 +81,13 @@ class Voronoi:
         vert1 = Arc.calculate_intersection(alpha1, alpha2)
         self.voronoi_graph.add_edge(Edge(vert0, vert1))
         # Check for circle events on the left and on the right
-        if alpha0.left_arc:
-            center = Vertex.calculate_circumcenter(
-                alpha0.left_arc.vertex,
-                q,
-                p)
-            # Alpha0 is the arc that will disappear with this event
-            circle_event = CircleEvent(alpha0, center)
-            alpha0.circle_events.append(circle_event)
-            alpha1.circle_events.append(circle_event)
-            alpha0.left_arc.circle_events.append(circle_event)
-            self.queue.insert(circle_event)
-        if alpha2.right_arc:
-            center = Vertex.calculate_circumcenter(
-                alpha2.right_arc.vertex,
-                q,
-                p)
-            # Alpha2 is the arc that will disappear with this event
-            circle_event = CircleEvent(alpha2, center)
-            alpha2.circle_events.append(circle_event)
-            alpha1.circle_events.append(circle_event)
-            alpha2.right_arc.circle_events.append(circle_event)
-            self.queue.insert(circle_event)
+        self.check_for_circle_events(alpha0.left_arc, alpha0, alpha1)
+        self.check_for_circle_events(alpha1, alpha2, alpha2.right_arc)
 
     def _handle_circle_event(self, circle_event: CircleEvent):
         alpha = circle_event.alpha
+        alpha_left = alpha.left_arc
+        alpha_right = alpha.right_arc
         """
         What we have before:
                  p-alpha
@@ -116,7 +102,7 @@ class Voronoi:
         # since it became obsolete after this point event
         if alpha.circle_events and len(alpha.circle_events) > 0:
             for c_event in alpha.circle_events:
-                self.queue.remove(c_event)
+                self.queue.delete(c_event)
                 # Helping the Garbage Collector
                 del c_event
             alpha.circle_events = None
@@ -124,7 +110,42 @@ class Voronoi:
         vertex = Arc.calculate_intersection(alpha.left_arc, alpha.right_arc)
         self.voronoi_graph.add_vertex(vertex)
         self.voronoi_graph.add_edge(Edge(vertex))
-        # TODO
+        # Check for circle events on the left and on the right
+        self.check_for_circle_events(
+            alpha_left.left_arc,
+            alpha_left,
+            alpha_right)
+        self.check_for_circle_events(
+            alpha_left,
+            alpha_right,
+            alpha_right.right_arc)
 
-    def check_for_circle_events(self):
-        pass
+    def check_for_circle_events(self, alpha_left: Arc,
+                                alpha: Arc,
+                                alpha_right: Arc):
+        """
+        This function checks for circle events on the left and on the right of
+        these 3 arcs
+        :param alpha_left: The left arc
+        :param alpha: The middle arc
+        :param alpha_right: The right arc
+        """
+        q = alpha_left.focus
+        p = alpha.focus
+        r = alpha_right.focus
+        """
+        Graph overview:
+                 p-alpha
+                /       \
+        q-alpha_left    r-alpha_right
+        """
+        if alpha_left and alpha and alpha_right:
+            center = Vertex.calculate_circumcenter(q, p, r)
+            # alpha is the arc that will disappear with this event
+            circle_event = CircleEvent(alpha, center)
+            # Referencing
+            alpha_left.circle_events.append(circle_event)
+            alpha.circle_events.append(circle_event)
+            alpha_right.circle_events.append(circle_event)
+            self.queue.insert(Node(priority=circle_event.value,
+                                   label=circle_event))
