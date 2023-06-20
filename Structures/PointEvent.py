@@ -1,5 +1,5 @@
-from Event import Event
-from Vertex import Vertex
+from Structures.Event import Event
+from Structures.Vertex import Vertex
 
 
 class PointEvent(Event):

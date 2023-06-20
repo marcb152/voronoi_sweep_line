@@ -6,4 +6,5 @@ if __name__ == '__main__':
 
 # TODO LIST (GLOBAL):
 # todo - understand how the DCEL is supposed to build itself
-# todo - implement arcs intersection
+# todo - fully comment the code
+# todo - add credits/sources where required

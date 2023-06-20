@@ -29,7 +29,7 @@ class Voronoi:
     def _handle_point_event(self, pt_event: PointEvent):
         p = pt_event.vertex
         # We retrieve alpha, the arc above p
-        alpha = self.tree.search_arc_above_vert(p)
+        alpha = self.tree.search_arc_above_vert(p, pt_event.value)
         # We remove any circle event related to alpha
         # since it became obsolete after this point event
         if alpha.circle_events and len(alpha.circle_events) > 0:
@@ -77,8 +77,8 @@ class Voronoi:
         p_alpha1_node.right_node = q_alpha2_node
         # Add voronoi edges: intersection(alpha0, alpha1)
         # and intersection(alpha1, alpha2)
-        vert0 = Arc.calculate_intersection(alpha0, alpha1)
-        vert1 = Arc.calculate_intersection(alpha1, alpha2)
+        vert0 = Arc.calculate_intersection(alpha0, alpha1, pt_event.value)
+        vert1 = Arc.calculate_intersection(alpha1, alpha2, pt_event.value)
         self.voronoi_graph.add_edge(Edge(vert0, vert1))
         # Check for circle events on the left and on the right
         self.check_for_circle_events(alpha0.left_arc, alpha0, alpha1)
@@ -107,7 +107,9 @@ class Voronoi:
                 del c_event
             alpha.circle_events = None
         # We add the edges and vertices to the DCEL
-        vertex = Arc.calculate_intersection(alpha.left_arc, alpha.right_arc)
+        vertex = Arc.calculate_intersection(alpha.left_arc,
+                                            alpha.right_arc,
+                                            circle_event.value)
         self.voronoi_graph.add_vertex(vertex)
         self.voronoi_graph.add_edge(Edge(vertex))
         # Check for circle events on the left and on the right
@@ -141,8 +143,9 @@ class Voronoi:
         """
         if alpha_left and alpha and alpha_right:
             center = Vertex.calculate_circumcenter(q, p, r)
+            radius = Vertex.calculate_circumradius(center, p)
             # alpha is the arc that will disappear with this event
-            circle_event = CircleEvent(alpha, center)
+            circle_event = CircleEvent(alpha, center, center.y + radius)
             # Referencing
             alpha_left.circle_events.append(circle_event)
             alpha.circle_events.append(circle_event)

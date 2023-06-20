@@ -1,3 +1,6 @@
+import math
+
+
 class Vertex:
     def __init__(self, x: float = 0, y: float = 0):
         self.x = x
@@ -24,3 +27,13 @@ class Vertex:
                + (c.x ** 2 + c.y ** 2) * (b.x - a.x))
         center = Vertex(u_x / d, u_y / d)
         return center
+
+    @staticmethod
+    def calculate_circumradius(center: 'Vertex', a: 'Vertex') -> float:
+        """
+        Formula based on wikipedia
+        :param center: Center of the circumcircle
+        :param a: One point on the circumcircle
+        :return: The radius of the circumcircle
+        """
+        return math.sqrt((center.x - a.x) ** 2 + (center.y - a.y) ** 2)

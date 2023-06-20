@@ -2,6 +2,8 @@ from collections import deque
 
 # SOURCE: https://gist.github.com/joyrexus/eda5cabd9367daf45628
 # THIS WHOLE SCRIPT IS NOT MINE
+
+
 def is_iterable(obj):
     """Test if `obj` is iterable."""
     try:
@@ -24,6 +26,34 @@ def are_labeled(objs):
     return all(is_iterable(obj) and has_label(obj) for obj in objs)
 
 
+class Node(dict):
+    """
+    Nodes are just dicts comparable by their `priority` key.
+    Your nodes should contain `label` attributes when you're
+    inserting into a PriorityQueue and you'd like to delete
+    a node by its label from the underlying heap.
+        >>> a = Node(dict(label='a', priority=5, msg='hi!'))
+    """
+
+    def __cmp__(self, other):
+        """
+        should return a negative integer if self < other, zero if
+        self == other, and positive if self > other.
+        """
+        if self['priority'] < other['priority']:
+            return -1
+        elif self['priority'] == other['priority']:
+            return 0
+        else:
+            return 1
+
+    def __eq__(self, other):
+        return self['priority'] == other['priority']
+
+    def __getattr__(self, attr):
+        return self.get(attr, None)
+
+
 class PriorityQueue:
     """
     Queue of elements/nodes ordered by priority.
@@ -34,16 +64,16 @@ class PriorityQueue:
     `node.label` attributes, you can then delete nodes by label.
     """
 
-    def __init__(self, nodes):
+    def __init__(self, nodes: list[Node]):
         self.size = 0
         self.heap = deque([None])
         self.labeled = False
-        for n in nodes: self.insert(n)
+        for n in nodes:
+            self.insert(n)
         if are_labeled(nodes):
             self.labeled = True
             self.position = {node.label: i + 1 for i, node in
-                             enumerate(self.heap)
-                             if i > 0}
+                             enumerate(self.heap) if i > 0}
 
     def __str__(self):
         return str(list(self.heap)[1:])
@@ -180,35 +210,7 @@ class PriorityQueue:
         """
         Return sorted array of elements in current heap.
         """
-        sorted = [self.shift() for i in range(self.size)]
-        self.heap = deque([None] + sorted)
+        sorted_list = [self.shift() for i in range(self.size)]
+        self.heap = deque([None] + sorted_list)
         self.size = len(self.heap) - 1
-        return sorted
-
-
-class Node(dict):
-    """
-    Nodes are just dicts comparable by their `priority` key.
-    Your nodes should contain `label` attributes when you're
-    inserting into a PriorityQueue and you'd like to delete
-    a node by its label from the underlying heap.
-        >>> a = Node(dict(label='a', priority=5, msg='hi!'))
-    """
-
-    def __cmp__(self, other):
-        """
-        should return a negative integer if self < other, zero if
-        self == other, and positive if self > other.
-        """
-        if self['priority'] < other['priority']:
-            return -1
-        elif self['priority'] == other['priority']:
-            return 0
-        else:
-            return 1
-
-    def __eq__(self, other):
-        return self['priority'] == other['priority']
-
-    def __getattr__(self, attr):
-        return self.get(attr, None)
+        return sorted_list

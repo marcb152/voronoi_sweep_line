@@ -1,5 +1,5 @@
-from Edge import Edge
-from Vertex import Vertex
+from Structures.Edge import Edge
+from Structures.Vertex import Vertex
 
 
 class DCEL:

@@ -1,5 +1,5 @@
-from Arc import Arc
-from Vertex import Vertex
+from Structures.Arc import Arc
+from Structures.Vertex import Vertex
 
 
 class BSTNode:
@@ -115,22 +115,23 @@ class BSTNode:
         else:
             raise "UnsupportedTypeException"
 
-    def search_arc_above_vert(self, vert: Vertex) -> Arc:
+    def search_arc_above_vert(self, vert: Vertex, directrix: float) -> Arc:
         # TODO (negligible): check the pertinence of inequalities (>= <=)
         # This node is above the asked point/focus
-        if self.arc.lower_bound() <= vert.x <= self.arc.upper_bound():
+        if (self.arc.lower_bound(directrix) <= vert.x
+                <= self.arc.upper_bound(directrix)):
             return self.arc
         # This node is on the right of the asked point
         # We redirect the search to the left
-        elif vert.x <= self.arc.lower_bound():
+        elif vert.x <= self.arc.lower_bound(directrix):
             if self.left_node:
-                return self.left_node.search_arc_above_vert(vert)
+                return self.left_node.search_arc_above_vert(vert, directrix)
             else:
                 raise "ValueNotFoundException"
         # This node is on the left of the asked point
         # We redirect the search to the right
-        elif vert.x >= self.arc.upper_bound():
+        elif vert.x >= self.arc.upper_bound(directrix):
             if self.right_node:
-                return self.right_node.search_arc_above_vert(vert)
+                return self.right_node.search_arc_above_vert(vert, directrix)
             else:
                 raise "ValueNotFoundException"
