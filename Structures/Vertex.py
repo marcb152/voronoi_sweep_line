@@ -6,6 +6,9 @@ class Vertex:
         self.x = x
         self.y = y
 
+    def __str__(self) -> str:
+        return f"({self.x, self.y})"
+
     # __init__ as defined
     @staticmethod
     def calculate_circumcenter(a: 'Vertex', b: 'Vertex', c: 'Vertex')\

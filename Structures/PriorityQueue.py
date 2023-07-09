@@ -1,216 +1,208 @@
 from collections import deque
+from Structures.Event import Event
+from Structures.PointEvent import PointEvent
+from Structures.CircleEvent import CircleEvent
 
-# SOURCE: https://gist.github.com/joyrexus/eda5cabd9367daf45628
-# THIS WHOLE SCRIPT IS NOT MINE
-
-
-def is_iterable(obj):
-    """Test if `obj` is iterable."""
-    try:
-        iter(obj)
-    except TypeError:
-        return False
-    return True
-
-
-def has_label(obj):
-    """Test if `obj` has a "label" attribute."""
-    try:
-        return obj.label
-    except AttributeError:
-        return False
-
-
-def are_labeled(objs):
-    """Test if `objs` all have "label" attributes."""
-    return all(is_iterable(obj) and has_label(obj) for obj in objs)
-
-
-class Node(dict):
-    """
-    Nodes are just dicts comparable by their `priority` key.
-    Your nodes should contain `label` attributes when you're
-    inserting into a PriorityQueue and you'd like to delete
-    a node by its label from the underlying heap.
-        >>> a = Node(dict(label='a', priority=5, msg='hi!'))
-    """
-
-    def __cmp__(self, other):
+class CustomNode:
+    def __init__(self, event: PointEvent | CircleEvent = None,
+                 root_node: 'CustomNode' = None,
+                 left_node: 'CustomNode' = None,
+                 right_node: 'CustomNode' = None):
         """
-        should return a negative integer if self < other, zero if
-        self == other, and positive if self > other.
+        This class implements an Y-coordinate sorted BST (top to bottom
+        min to max Y)
+        :param event: The event to assign to this node (if any)
+        :param root_node: The parent of this node (if any)
+        :param left_node: The left node of this node (if any)
+        :param right_node: The right node of this node (if any)
         """
-        if self['priority'] < other['priority']:
-            return -1
-        elif self['priority'] == other['priority']:
-            return 0
+        self.root_node = root_node
+        self.left_node = left_node
+        self.right_node = right_node
+        self.events = [event]
+
+    def inorder(self):
+        """
+        Utility function to print the BST in-order (top to bottom Y)
+        """
+        if self is None:
+            return
+        self.left_node.inorder()
+        print(self.events, end="-")
+        self.right_node.inorder()
+
+    def insert(self, event: PointEvent | CircleEvent):
+        if self.events is None or len(self.events) == 0:
+            self.events = [event]
+            pass
+
+        if event in self.events:
+            raise "NotImplementedException"
+        elif event.value < self.events[0].value:
+            if not self.left_node:
+                self.left_node = CustomNode(event, root_node=self)
+            else:
+                self.left_node.insert(event)
+        elif event.value > self.events[0].value:
+            if not self.right_node:
+                self.right_node = CustomNode(event, root_node=self)
+            else:
+                self.right_node.insert(event)
         else:
-            return 1
+            raise "NotImplementedException"
 
-    def __eq__(self, other):
-        return self['priority'] == other['priority']
+    def find_and_remove(self, event: PointEvent | CircleEvent):
+        """
+        Function able to find a node based on its data and can then delete it
+        :param event: The event value to delete in this BST
+        """
+        if self.events is None or len(self.events) == 0:
+            raise "ValueNotFoundException"
 
-    def __getattr__(self, attr):
-        return self.get(attr, None)
+        if event in self.events:
+            # If there's more than 1 event at this position
+            if len(self.events) > 1:
+                self.events.remove(event)
+            # If this is the only event associated with this node
+            else:
+                self.delete()
+        elif event.value < self.events[0].value:
+            if self.left_node:
+                self.left_node.find_and_remove(event)
+            else:
+                raise "ValueNotFoundException"
+        elif event.value > self.events[0].value:
+            if self.right_node:
+                self.right_node.find_and_remove(event)
+            else:
+                raise "ValueNotFoundException"
+        else:
+            raise "ValueNotFoundException"
+
+    def delete(self):
+        """
+        This utility function deletes a CustomNode from the BST
+        """
+        parent = self.root_node
+        # Case 1 : No children, simple case
+        if not self.left_node and not self.right_node:
+            # First we break the reference
+            if parent and parent.right_node == self:
+                parent.right_node = None
+            elif parent and parent.left_node == self:
+                parent.left_node = None
+            # Second we delete it
+            del self
+        # Case 2 : One child that will become the successor
+        elif not self.left_node or not self.right_node:
+            # If the only child is the left node
+            if self.left_node:
+                # METHOD 1 : references/pointers update (removal of the node)
+                self.left_node.root_node = self.root_node
+                if parent and parent.right_node == self:
+                    parent.right_node = self.left_node
+                elif parent and parent.left_node == self:
+                    parent.left_node = self.left_node
+                # Then we delete it
+                del self
+            # If the only child is the right node
+            elif self.right_node:
+                # METHOD 2 : stealing data + deleting
+                self.events = self.right_node.events
+                self.right_node.delete()
+        # Case 3 : Two children
+        elif self.right_node and self.left_node:
+            # First, find the inorder successor (leftmost node of right subtree)
+            successor = self.right_node._find_successor()
+            # Secondly, we update data (data replacement instead of updating
+            # references/pointers)
+            self.events = successor.events
+            successor.delete()
+
+    def _find_successor(self) -> 'CustomNode':
+        """
+        This function recursively finds the left-most node
+        :return: The found left-most node
+        """
+        if self.left_node:
+            return self.left_node._find_successor()
+        else:
+            return self
+
+    def find(self, event: PointEvent | CircleEvent) -> 'CustomNode':
+        """
+        Finds a CustomNode based on an Event
+        :param event: The searching object
+        :return: The found BSTNode object
+        """
+        # TODO (negligible): Implement proper exception handling
+        if self.events is None or len(self.events) == 0:
+            raise "ValueNotFoundException"
+
+        if event in self.events:
+            return self
+        elif event.value < self.events[0].value:
+            if self.left_node:
+                return self.left_node.find(event)
+            else:
+                raise "ValueNotFoundException"
+        elif event.value > self.events[0].value:
+            if self.right_node:
+                return self.right_node.find(event)
+            else:
+                raise "ValueNotFoundException"
+        else:
+            raise "ValueNotFoundException"
+
+    def get_min(self) -> 'CustomNode':
+        if self.left_node is not None and len(self.left_node.events) > 0:
+            return self.left_node.get_min()
+        elif self.left_node is None:
+            return self
+        else:
+            raise "EmptyCustomNodeException"
+
+    def get_max(self) -> 'CustomNode':
+        if self.right_node is not None and len(self.right_node.events) > 0:
+            return self.right_node.get_min()
+        elif self.right_node is None:
+            return self
+        else:
+            raise "EmptyCustomNodeException"
 
 
 class PriorityQueue:
-    """
-    Queue of elements/nodes ordered by priority.
-    Implementation uses a binary heap where each node is less than
-    or equal to its children.  Note that nodes can be anything as
-    long as they're comparable.
-    If you initialize your queue with node elements that contain
-    `node.label` attributes, you can then delete nodes by label.
-    """
-
-    def __init__(self, nodes: list[Node]):
+    def __init__(self, events: list[PointEvent | CircleEvent]):
         self.size = 0
-        self.heap = deque([None])
-        self.labeled = False
-        for n in nodes:
-            self.insert(n)
-        if are_labeled(nodes):
-            self.labeled = True
-            self.position = {node.label: i + 1 for i, node in
-                             enumerate(self.heap) if i > 0}
+        self.root = CustomNode(events[len(events) // 2])
+        for event in events:
+            if event != events[len(events) // 2]:
+                self.root.insert(event)
 
-    def __str__(self):
-        return str(list(self.heap)[1:])
+    def insert(self, event):
+        self.root.insert(event)
 
-    def __eq__(self, other):
-        return list(self.heap)[1:] == other
-
-    def node(self, i):
-        """
-        Return {index, value} of node at index i.
-        This is used for testing parent/child relations.
-
-        """
-        return dict(index=i, value=self.heap[i])
-
-    def parent(self, child):
-        """
-        Return {index, value} for parent of child node.
-        """
-        i = child['index']
-        p = i // 2
-        return self.node(p)
-
-    def children(self, parent):
-        """
-        Return list of child nodes for parent.
-        """
-        p = parent['index']
-        l, r = (p * 2), (p * 2 + 1)  # indices of left and right child nodes
-        if r > self.size:
-            return [self.node(l)]
-        else:
-            return [self.node(l), self.node(r)]
-
-    def swap(self, i, j):
-        """
-        Swap the values of nodes at index i and j.
-        """
-        self.heap[i], self.heap[j] = self.heap[j], self.heap[i]
-        if self.labeled:
-            I, J = self.heap[i], self.heap[j]
-            self.position[I.label] = i
-            self.position[J.label] = j
-
-    def shift_up(self, i):
-        """
-        Percolate upward the value at index i to restore heap property.
-        """
-        p = i // 2  # index of parent node
-        while p:
-            if self.heap[i] < self.heap[p]:
-                self.swap(i, p)  # swap with parent
-            i = p  # new index after swapping with parent
-            p = p // 2  # new parent index
-
-    def shift_down(self, i):
-        """
-        Percolate downward the value at index i to restore heap property.
-        """
-        c = i * 2
-        while c <= self.size:
-            c = self.min_child(i)
-            if self.heap[i] > self.heap[c]:
-                self.swap(i, c)
-            i = c  # new index after swapping with child
-            c = c * 2  # new child index
-
-    def min_child(self, i):
-        """
-        Return index of minimum child node.
-        """
-        l, r = (i * 2), (i * 2 + 1)  # indices of left and right child nodes
-        if r > self.size:
-            return l
-        else:
-            return l if self.heap[l] < self.heap[r] else r
+    def delete(self, event):
+        self.root.find_and_remove(event)
 
     @property
-    def min(self):
-        """
-        Return minimum node in heap.
-        """
-        return self.heap[1]
+    def is_empty(self) -> bool:
+        if (self.root is None or
+                (len(self.root.events) == 0 and
+                 self.root.left_node is None and
+                 self.root.right_node is None)):
+            return True
+        else:
+            return False
 
-    @property
-    def top(self):
-        """
-        Return top/minimum element in heap.
-        """
-        return self.min
+    def pop_min(self) -> list[PointEvent | CircleEvent]:
+        node = self.root.get_min()
+        events = node.events.copy()
+        node.delete()
+        return events
 
-    def shift(self):
-        """
-        Shift off top/minimum node in heap.
-        """
-        return self.pop(1)
-
-    def pop(self, i):
-        """
-        Pop off node at index `i` in heap.
-        """
-        if self.size == 0: return None
-        v = self.heap[i]  # return specified node
-        self.swap(self.size, i)  # move last element to i
-        self.heap.pop()  # delete last element
-        self.size -= 1  # decrement size
-        self.shift_down(i)  # percolate top value down if necessary
-        return v
-
-    def delete(self, label):
-        """
-        Pop off node with specified label attribute.
-        """
-        try:
-            i = self.position[label]
-            self.position[label] = None
-        except:
-            print('node with label "{}" does not exist'.format(label))
-            return None
-        return self.pop(i)
-
-    def insert(self, node):
-        """
-        Append `node` to the heap and percolate up
-        if necessary to maintain heap property.
-        """
-        if has_label(node) and self.labeled:
-            self.position[node.label] = self.size
-        self.heap.append(node)
-        self.size += 1
-        self.shift_up(self.size)
-
-    def sort(self):
-        """
-        Return sorted array of elements in current heap.
-        """
-        sorted_list = [self.shift() for i in range(self.size)]
-        self.heap = deque([None] + sorted_list)
-        self.size = len(self.heap) - 1
-        return sorted_list
+    def pop_max(self) -> list[PointEvent | CircleEvent]:
+        node = self.root.get_max()
+        events = node.events.copy()
+        node.delete()
+        return events

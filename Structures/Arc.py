@@ -57,6 +57,10 @@ class Arc:
         :param right_arc: The second arc, must be of type Arc
         :return: A point if found, otherwise None
         """
+        # We verify if both arcs are not null
+        if left_arc is None or right_arc is None:
+            return None
+        # Variables
         x, y = 0.0, 0.0
         f0 = left_arc.focus
         f1 = right_arc.focus

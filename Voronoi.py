@@ -5,7 +5,7 @@ from Structures.PointEvent import PointEvent
 from Structures.CircleEvent import CircleEvent
 from Structures.Arc import Arc
 from Structures.Edge import Edge
-from Structures.PriorityQueue import PriorityQueue, Node
+from Structures.PriorityQueue import PriorityQueue, CustomNode
 
 
 class Voronoi:
@@ -14,15 +14,15 @@ class Voronoi:
         self.voronoi_graph = DCEL()
         # Converting points to list of PointEvents
         points = [PointEvent(vert) for vert in entry]
-        values = [Node(priority=pt_event.value, label=pt_event)
-                  for pt_event in points]
-        self.queue = PriorityQueue(values)
-        while self.queue.size > 0:
-            (value, p) = self.queue.min()
-            if type(p) == PointEvent:
-                self._handle_point_event(p)
-            elif type(p) == CircleEvent:
-                self._handle_circle_event(p)
+        self.queue = PriorityQueue(points)
+        while not self.queue.is_empty:
+            for p in self.queue.pop_min():
+                if type(p) == PointEvent:
+                    print("Point event {}".format(p.vertex))
+                    self._handle_point_event(p)
+                elif type(p) == CircleEvent:
+                    print("Circle event {}".format(p.arc.focus))
+                    self._handle_circle_event(p)
         # TODO: Manage all the unbounded arcs in 'tree' -> EASY
         # |-> Calculate the intersection between them and the bounding box
 
@@ -30,6 +30,10 @@ class Voronoi:
         p = pt_event.vertex
         # We retrieve alpha, the arc above p
         alpha = self.tree.search_arc_above_vert(p, pt_event.value)
+        # If alpha is None -> this is the first point of the graph
+        if alpha is None:
+            self.tree.arc = Arc(p)
+            return
         # We remove any circle event related to alpha
         # since it became obsolete after this point event
         if alpha.circle_events and len(alpha.circle_events) > 0:
@@ -59,8 +63,8 @@ class Voronoi:
         q-alpha0    q-alpha2
         """
         # Removing alpha from the tree
-        parent_node_alpha = self.tree.find(alpha).root_node
-        self.tree.find_and_remove(alpha)
+        parent_node_alpha = self.tree.find(alpha, pt_event.value).root_node
+        self.tree.find_and_remove(alpha, pt_event.value)
         # Defining new arcs
         alpha0 = Arc(q, left_arc=alpha.left_arc)
         alpha1 = Arc(p)
@@ -77,6 +81,8 @@ class Voronoi:
         p_alpha1_node.right_node = q_alpha2_node
         # Add voronoi edges: intersection(alpha0, alpha1)
         # and intersection(alpha1, alpha2)
+        print(f"Intersection of point arc with focus {alpha0.focus} and "
+              f"arc with focus {alpha1.focus} with directrix {pt_event.value}")
         vert0 = Arc.calculate_intersection(alpha0, alpha1, pt_event.value)
         vert1 = Arc.calculate_intersection(alpha1, alpha2, pt_event.value)
         self.voronoi_graph.add_edge(Edge(vert0, vert1))
@@ -96,7 +102,7 @@ class Voronoi:
         
         What we will obtain??
         """
-        self.tree.find_and_remove(alpha)
+        self.tree.find_and_remove(alpha, circle_event.value)
         # TODO: delete alpha and handle breakpoints
         # We remove any circle event related to alpha
         # since it became obsolete after this point event
@@ -150,5 +156,4 @@ class Voronoi:
             alpha_left.circle_events.append(circle_event)
             alpha.circle_events.append(circle_event)
             alpha_right.circle_events.append(circle_event)
-            self.queue.insert(Node(priority=circle_event.value,
-                                   label=circle_event))
+            self.queue.insert(circle_event)
