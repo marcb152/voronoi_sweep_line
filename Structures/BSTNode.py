@@ -26,9 +26,11 @@ class BSTNode:
         """
         if self is None:
             return
-        self.left_node.inorder()
+        if self.left_node:
+            self.left_node.inorder()
         print(self.arc.focus, end="-")
-        self.right_node.inorder()
+        if self.right_node:
+            self.right_node.inorder()
 
     def find_and_remove(self, arc: Arc, directrix: float):
         """

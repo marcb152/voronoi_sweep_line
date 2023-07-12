@@ -65,6 +65,9 @@ class Arc:
         f0 = left_arc.focus
         f1 = right_arc.focus
         # Calculating second order constants: ax²+bx+c=0
+        if directrix - f0.y == 0:
+            # Division by zero avoidance
+            return None
         a = (f1.y - f0.y) / (directrix - f0.y)
         b = (2 * f1.x - 2 * f0.x * (1 - (f0.y - f1.y) / (f0.y - directrix)))
         c = (f0.x ** 2 + f0.y ** 2 - f1.x ** 2 - f1.y ** 2 +

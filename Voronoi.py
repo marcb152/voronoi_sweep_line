@@ -5,24 +5,37 @@ from Structures.PointEvent import PointEvent
 from Structures.CircleEvent import CircleEvent
 from Structures.Arc import Arc
 from Structures.Edge import Edge
-from Structures.PriorityQueue import PriorityQueue, CustomNode
+from Structures.PriorityQueue import PriorityQueue
+from visuel import Visuel
+
+from time import sleep
 
 
 class Voronoi:
-    def __init__(self, entry: list[Vertex]):
+    def __init__(self, entry: list[Vertex], visuel: Visuel):
+        self.visuel = visuel
+        old_vertices = []
         self.tree = BSTNode(None)
         self.voronoi_graph = DCEL()
         # Converting points to list of PointEvents
         points = [PointEvent(vert) for vert in entry]
+        points.sort()
         self.queue = PriorityQueue(points)
         while not self.queue.is_empty:
             for p in self.queue.pop_min():
                 if type(p) == PointEvent:
                     print("Point event {}".format(p.vertex))
+                    old_vertices.append(p.vertex)
                     self._handle_point_event(p)
                 elif type(p) == CircleEvent:
                     print("Circle event {}".format(p.arc.focus))
                     self._handle_circle_event(p)
+                # Visual update
+                self.visuel.reset_hyperbolas()
+                for vert in old_vertices:
+                    self.visuel.hyperbola(vert, p.value)
+                # Sleep for visual debug
+                sleep(2)
         # TODO: Manage all the unbounded arcs in 'tree' -> EASY
         # |-> Calculate the intersection between them and the bounding box
 
@@ -38,9 +51,10 @@ class Voronoi:
         # since it became obsolete after this point event
         if alpha.circle_events and len(alpha.circle_events) > 0:
             for c_event in alpha.circle_events:
-                self.queue.delete(c_event)
-                # Helping the Garbage Collector
-                del c_event
+                if c_event:
+                    self.queue.delete(c_event)
+                    # Helping the Garbage Collector
+                    del c_event
             alpha.circle_events = None
         # Let q be the focus linked to alpha
         q = alpha.focus
@@ -81,11 +95,17 @@ class Voronoi:
         p_alpha1_node.right_node = q_alpha2_node
         # Add voronoi edges: intersection(alpha0, alpha1)
         # and intersection(alpha1, alpha2)
-        print(f"Intersection of point arc with focus {alpha0.focus} and "
-              f"arc with focus {alpha1.focus} with directrix {pt_event.value}")
         vert0 = Arc.calculate_intersection(alpha0, alpha1, pt_event.value)
+        print(f"Intersection of point arc with focus {alpha0.focus} and "
+              f"arc with focus {alpha1.focus} with directrix {pt_event.value}, "
+              f"intersection at {vert0}")
         vert1 = Arc.calculate_intersection(alpha1, alpha2, pt_event.value)
+        print(f"Intersection of point arc with focus {alpha1.focus} and "
+              f"arc with focus {alpha2.focus} with directrix {pt_event.value}, "
+              f"intersection at {vert1}")
         self.voronoi_graph.add_edge(Edge(vert0, vert1))
+        if vert0 and vert1:
+            self.visuel.trace(vert0, vert1)
         # Check for circle events on the left and on the right
         self.check_for_circle_events(alpha0.left_arc, alpha0, alpha1)
         self.check_for_circle_events(alpha1, alpha2, alpha2.right_arc)
@@ -138,9 +158,6 @@ class Voronoi:
         :param alpha: The middle arc
         :param alpha_right: The right arc
         """
-        q = alpha_left.focus
-        p = alpha.focus
-        r = alpha_right.focus
         """
         Graph overview:
                  p-alpha
@@ -148,6 +165,9 @@ class Voronoi:
         q-alpha_left    r-alpha_right
         """
         if alpha_left and alpha and alpha_right:
+            q = alpha_left.focus
+            p = alpha.focus
+            r = alpha_right.focus
             center = Vertex.calculate_circumcenter(q, p, r)
             radius = Vertex.calculate_circumradius(center, p)
             # alpha is the arc that will disappear with this event

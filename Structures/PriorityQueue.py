@@ -1,10 +1,8 @@
-from collections import deque
-from Structures.Event import Event
 from Structures.PointEvent import PointEvent
 from Structures.CircleEvent import CircleEvent
 
 class CustomNode:
-    def __init__(self, event: PointEvent | CircleEvent = None,
+    def __init__(self, event: PointEvent | CircleEvent,
                  root_node: 'CustomNode' = None,
                  left_node: 'CustomNode' = None,
                  right_node: 'CustomNode' = None):
@@ -27,9 +25,12 @@ class CustomNode:
         """
         if self is None:
             return
-        self.left_node.inorder()
-        print(self.events, end="-")
-        self.right_node.inorder()
+        if self.left_node:
+            self.left_node.inorder()
+        for event in self.events:
+            print(event, end="-")
+        if self.right_node:
+            self.right_node.inorder()
 
     def insert(self, event: PointEvent | CircleEvent):
         if self.events is None or len(self.events) == 0:
@@ -91,6 +92,9 @@ class CustomNode:
                 parent.right_node = None
             elif parent and parent.left_node == self:
                 parent.left_node = None
+            else:
+                # Case where we try to delete the last node (root)
+                self.events = None
             # Second we delete it
             del self
         # Case 2 : One child that will become the successor
@@ -188,7 +192,7 @@ class PriorityQueue:
     @property
     def is_empty(self) -> bool:
         if (self.root is None or
-                (len(self.root.events) == 0 and
+                ((self.root.events is None or len(self.root.events) == 0) and
                  self.root.left_node is None and
                  self.root.right_node is None)):
             return True
